@@ -36,6 +36,10 @@ export default class Core {
 
       console.log("Koin yang didapat:", coins); // Logging koin
 
+      // Tambahkan log untuk menunjukkan alamat dan jenis koin
+      console.log(`Alamat Akun: ${this.acc}`);
+      console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
+
       if (!coins.data || coins.data.length === 0) {
         throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
       }
