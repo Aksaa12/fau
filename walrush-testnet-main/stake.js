@@ -39,20 +39,20 @@ export default class Core {
       console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
 
       // Tampilkan jumlah koin WAL yang dimiliki
-      const totalWalCoins = coins.data ? coins.data.reduce((total, coin) => total + coin.balance, 0) : 0;
-      console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / MIST_PER_SUI); // Konversi ke SUI
+      const totalWalCoins = coins.data ? coins.data.reduce((total, coin) => total + BigInt(coin.balance), BigInt(0)) : BigInt(0);
+      console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / BigInt(MIST_PER_SUI)); // Konversi ke SUI
 
       if (!coins.data || coins.data.length === 0) {
         throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
       }
 
       const coin = coins.data[0];
-      const balance = coin.balance;
+      const balance = BigInt(coin.balance); // Menggunakan BigInt untuk balance
 
       console.log("Saldo koin:", balance); // Logging saldo
 
       // Cek apakah jumlah WAL sama dengan 1
-      const amountWal = Number((balance / MIST_PER_SUI).toFixed(2));
+      const amountWal = Number((balance / BigInt(MIST_PER_SUI)).toString());
       if (amountWal !== 1) {
         throw new Error(`Jumlah WAL yang dimiliki adalah ${amountWal}. Hanya bisa stake 1 WAL.`);
       }
