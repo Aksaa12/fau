@@ -34,11 +34,13 @@ export default class Core {
         coinType: COINENUM.WAL,
       });
 
-      console.log("Koin yang didapat:", coins); // Logging koin
-
       // Tambahkan log untuk menunjukkan alamat dan jenis koin
       console.log(`Alamat Akun: ${this.acc}`);
       console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
+
+      // Tampilkan jumlah koin WAL yang dimiliki
+      const totalWalCoins = coins.data ? coins.data.reduce((total, coin) => total + coin.balance, 0) : 0;
+      console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / MIST_PER_SUI); // Konversi ke SUI
 
       if (!coins.data || coins.data.length === 0) {
         throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
