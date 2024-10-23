@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
@@ -7,8 +8,10 @@ import { COINENUM } from "./coin/coin_enum.js";
 import logger from "../utils/logger.js";
 
 export default class Core {
-  constructor(privateKey) {
-    this.acc = privateKey;
+  constructor() {
+    // Membaca private key dari file 'data.txt'
+    const privateKey = fs.readFileSync('data.txt', 'utf8').trim(); // Membaca private key dari file dan menghapus spasi kosong
+    this.acc = privateKey; 
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
