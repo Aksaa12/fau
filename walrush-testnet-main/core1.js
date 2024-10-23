@@ -46,6 +46,7 @@ async stakeWalToOperator() {
     console.log("Memulai staking..."); // Log untuk memulai staking
     try {
         await Helper.delay(1000, this.acc, "Try To Stake WAL to Operator", this);
+        
         const coins = await this.client.getCoins({
             owner: this.address,
             coinType: COINENUM.WAL,
@@ -53,10 +54,16 @@ async stakeWalToOperator() {
 
         console.log("Coins found:", coins); // Log untuk menunjukkan koin yang ditemukan
         if (coins.data.length < 1) {
-            throw new Error("No WAL coins available to stake.");
+            console.log("No WAL coins available to stake."); // Log jika tidak ada koin
+            return; // Kembali jika tidak ada koin
         }
 
+        // Log alamat dan saldo
         const coin = coins.data[0]; // Dapatkan koin WAL pertama
+        const walBalance = coin.balance;
+        console.log(`Address: ${this.address}`);
+        console.log(`Balance WAL: ${walBalance}`);
+
         const amountToStake = BigInt(1) * BigInt(MIST_PER_SUI); // Hanya staking 1 WAL, konversi ke MIST
 
         // Dapatkan informasi pool
@@ -78,27 +85,34 @@ async stakeWalToOperator() {
         // Pisahkan koin yang akan di-stake
         const coinToStake = await transaction.splitCoins(
             transaction.object(coin.coinObjectId),
-            [amountToStake] // Hanya menggunakan BigInt
+            [amountToStake]
         );
+
+        // Log informasi sebelum melakukan staking
+        console.log(`Staking ${amountToStake} WAL to validator...`);
 
         // Panggil fungsi stake_with_pool dengan argumen yang benar
         const stakedCoin = transaction.moveCall({
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
-                transaction.object(poolObject.data.objectId), // ID objek pool
-                transaction.object(coinToStake), // Koin yang di-stake
+                transaction.object(poolObject.data.objectId),
+                transaction.object(coinToStake),
                 { amount: amountToStake.toString() }, // Jumlah yang di-stake sebagai objek
             ],
         });
 
         await transaction.transferObjects([stakedCoin], this.address);
         await this.executeTx(transaction);
+
+        console.log("Staking successful!"); // Log jika staking berhasil
     } catch (error) {
         console.error("Error staking WAL:", error);
         throw error;
+    } finally {
+        // Log untuk status akhir transaksi
+        console.log(`Staking to Address: ${this.address} completed with status: ${error ? 'Failed' : 'Success'}`);
     }
 }
-
 
   async executeTx(transaction) {
     try {
