@@ -1,55 +1,53 @@
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
-import {
-  FaucetRateLimitError,
-  getFaucetHost,
-  requestSuiFromFaucetV0,
-} from "@mysten/sui/faucet";
+import { requestSuiFromFaucetV0, getFaucetHost } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import { Helper } from "../utils/helper.js"; // Sesuaikan path ini dengan lokasi Helper Anda
+import fs from 'fs';
 
-class SuiFaucetRequester {
-  constructor(privateKey) {
-    this.privateKey = privateKey;
-    this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
-  }
+// Fungsi untuk membaca kunci privat dari file
+function loadPrivateKeys() {
+  const data = fs.readFileSync('data.txt', 'utf-8');
+  return data.split('\n').filter(line => line.trim() !== ''); // Menghapus baris kosong
+}
 
-  async getAccountInfo() {
-    try {
-      const decodedPrivateKey = decodeSuiPrivateKey(this.privateKey);
-      this.wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
-      this.address = this.wallet.getPublicKey().toSuiAddress();
-      console.log(`Address: ${this.address}`);
-    } catch (error) {
-      console.error("Error getting account info:", error);
-    }
-  }
+// Memuat kunci privat dari file
+const privateKeys = loadPrivateKeys();
 
-  async requestFaucet() {
-    try {
-      console.log("Requesting Sui Faucet...");
-      await requestSuiFromFaucetV0({
-        host: getFaucetHost("testnet"),
-        recipient: this.address,
-      });
-      console.log("Sui Faucet Requested Successfully!");
-    } catch (error) {
-      if (error instanceof FaucetRateLimitError) {
-        console.error("Rate limit exceeded:", error.message);
-      } else {
-        console.error("Faucet request failed:", error);
-      }
-    }
-  }
+async function requestFaucet(privateKey) {
+  try {
+    // Dekode kunci privat untuk mendapatkan alamat dompet
+    const decodedPrivateKey = decodeSuiPrivateKey(privateKey);
+    const wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
+    const address = wallet.getPublicKey().toSuiAddress();
 
-  async run() {
-    await this.getAccountInfo();
-    await this.requestFaucet();
+    console.log("Meminta 1 SUI untuk alamat:", address);
+
+    // Meminta 1 SUI dari faucet
+    const response = await requestSuiFromFaucetV0({
+      host: getFaucetHost("testnet"),
+      recipient: address,
+    });
+
+    console.log("Respon faucet untuk alamat", address, ":", response);
+  } catch (error) {
+    console.error("Permintaan faucet gagal untuk alamat", address, ":", error);
   }
 }
 
-// Gantilah dengan private key Anda
-const PRIVATE_KEY = "suiprivkey1qql5mpg03ns03tsn7lax22tt3nupfewtl459vsxakhzkhx72c48qcuk3svp"; 
+// Fungsi untuk meminta SUI untuk semua kunci privat
+async function requestForAllKeys() {
+  for (const privateKey of privateKeys) {
+    await requestFaucet(privateKey);
+  }
+}
 
-const faucetRequester = new SuiFaucetRequester(PRIVATE_KEY);
-faucetRequester.run();
+// Fungsi untuk menyegarkan skrip
+async function refreshRequests() {
+  console.log("Menyegarkan permintaan...");
+  await requestForAllKeys();
+}
+
+// Set interval untuk meminta SUI setiap 10 detik
+setInterval(refreshRequests, 10000);
+
+// Panggilan awal untuk memulai proses segera
+refreshRequests();
