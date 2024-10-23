@@ -57,7 +57,7 @@ export default class Core {
       }
 
       const coin = coins.data[0]; // Dapatkan koin WAL pertama
-      const amountToStake = 1; // Hanya staking 1 WAL
+      const amountToStake = BigInt(1) * BigInt(MIST_PER_SUI); // Hanya staking 1 WAL, konversi ke MIST
 
       const poolObject = await this.client.getObject({
         id: this.walrusPoolObjectId,
@@ -74,7 +74,7 @@ export default class Core {
       const transaction = new Transaction();
       const coinToStake = await transaction.splitCoins(
         transaction.object(coin.coinObjectId),
-        [amountToStake * MIST_PER_SUI] // Konversi ke MIST untuk staking
+        [amountToStake] // Hanya menggunakan BigInt
       );
 
       const stakedCoin = transaction.moveCall({
