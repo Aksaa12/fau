@@ -27,7 +27,7 @@ export default class Core {
     }
   }
 
-  async getAccountInfo() {
+async getAccountInfo() {
     try {
       // Attempt to get coins for the account
       const coins = await this.client.getCoins({ owner: this.acc });
@@ -47,7 +47,7 @@ export default class Core {
       console.error("Error getting account info:", error);
       throw error; // Rethrow the error for handling in the calling method
     }
-  }
+}
 
   async stakeWalToOperator() {
     try {
