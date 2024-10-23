@@ -5,7 +5,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
 import { COINENUM } from './app/src/core/coin/coin_enum.js';
-import logger from "../utils/logger.js";
+import logger from './app/src/utils/logger.js';
+
 
 export default class Core {
   constructor() {
