@@ -13,24 +13,27 @@ function loadPrivateKeys() {
 const privateKeys = loadPrivateKeys();
 
 async function requestFaucet(privateKey) {
+  let address; // Mendefinisikan address di sini
   try {
     // Dekode kunci privat untuk mendapatkan alamat dompet
     const decodedPrivateKey = decodeSuiPrivateKey(privateKey);
     const wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
-    const address = wallet.getPublicKey().toSuiAddress();
+    address = wallet.getPublicKey().toSuiAddress();
 
-    console.log("Meminta 100 SUI untuk alamat:", address);
+    console.log("Meminta 1 SUI untuk alamat:", address);
 
-    // Meminta 100 SUI dari faucet
+    // Meminta 1 SUI dari faucet
     const response = await requestSuiFromFaucetV0({
       host: getFaucetHost("testnet"),
       recipient: address,
-      amount: 100 * Math.pow(10, 9) // Mengatur jumlah ke 100 SUI (dalam unit terkecil)
+      amount: 1 * Math.pow(10, 9) // Mengatur jumlah ke 1 SUI (dalam unit terkecil)
     });
 
     console.log("Respon faucet untuk alamat", address, ":", response);
   } catch (error) {
-    console.error("Permintaan faucet gagal untuk alamat", address, ":", error);
+    console.error("Permintaan faucet gagal untuk alamat", address || "tidak diketahui", ":", error);
+    // Jika terjadi kesalahan, kita bisa mencoba untuk menyegarkan permintaan
+    setTimeout(() => refreshRequests(), 10000); // Menunggu 10 detik sebelum mencoba kembali
   }
 }
 
