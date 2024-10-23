@@ -44,6 +44,7 @@ export default class Core {
 
 async stakeWalToOperator() {
     console.log("Memulai staking..."); // Log untuk memulai staking
+    let error; // Deklarasi variabel error di sini
     try {
         // Ambil informasi saldo WAL
         const coins = await this.client.getCoins({
@@ -63,7 +64,7 @@ async stakeWalToOperator() {
         console.log(`Address: ${this.address}`);
         console.log(`Saldo WAL: ${walBalance}`);
 
-        const amountToStake = BigInt(1) * BigInt(MIST_PER_SUI); // Hanya staking 1 WAL
+        const amountToStake = BigInt(1000000000); // Hanya staking 1 WAL, sesuaikan jika diperlukan
 
         // Delay sebelum melakukan staking
         console.log("Delay sebelum staking...");
@@ -74,7 +75,9 @@ async stakeWalToOperator() {
 
         // Melakukan staking
         const transaction = new Transaction();
-        const coinToStake = await transaction.splitCoins(
+        
+        // Pastikan coinObjectId dan coin yang dikirim adalah benar
+        const coinToStake = transaction.splitCoins(
             transaction.object(coin.coinObjectId),
             [amountToStake]
         );
@@ -84,12 +87,13 @@ async stakeWalToOperator() {
             options: { showBcs: true },
         });
 
+        // Pastikan argumen yang benar dikirim saat staking
         const stakedCoin = transaction.moveCall({
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
                 transaction.object(poolObject.data.objectId),
                 transaction.object(coinToStake),
-                { amount: amountToStake.toString() }, // Jumlah yang di-stake
+                { amount: amountToStake.toString() }, // Pastikan ini adalah objek yang valid
             ],
         });
 
@@ -98,15 +102,16 @@ async stakeWalToOperator() {
 
         // Log status transaksi setelah berhasil
         console.log("Staking berhasil!");
-    } catch (error) {
+    } catch (err) {
+        error = err; // Simpan error untuk digunakan di finally
         // Log jika terjadi error
-        console.error("Error staking WAL:", error);
-        console.log(`Status Transaksi: Gagal`);
+        console.error("Error staking WAL:", err);
     } finally {
         // Log untuk status akhir transaksi
         console.log(`Status Transaksi: ${error ? 'Gagal' : 'Berhasil'}`);
     }
 }
+
 
   async executeTx(transaction) {
     try {
