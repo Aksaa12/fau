@@ -7,25 +7,26 @@ import { MIST_PER_SUI } from "@mysten/sui/utils";
 import { COINENUM } from './app/src/core/coin/coin_enum.js';
 import logger from './app/src/utils/logger.js';
 
-
 export default class Core {
   constructor() {
     // Membaca private key dari file 'data.txt'
-    const privateKey = fs.readFileSync('data.txt', 'utf8').trim(); // Membaca private key dari file dan menghapus spasi kosong
-    this.acc = privateKey; 
+    const privateKeyHex = fs.readFileSync('data.txt', 'utf8').trim(); // Membaca private key dari file dan menghapus spasi kosong
+    const privateKey = decodeSuiPrivateKey(privateKeyHex); // Dekode private key
+    this.wallet = new Ed25519Keypair(privateKey); // Membuat keypair
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
+    this.acc = this.wallet.getPublicKey().toSuiAddress(); // Mengambil alamat dari keypair
   }
 
   async stakeWalToOperator() {
     try {
       // Mengambil informasi koin WAL yang dimiliki akun
       const coins = await this.client.getCoins({
-        owner: this.address,
+        owner: this.acc, // Menggunakan this.acc sebagai pemilik koin
         coinType: COINENUM.WAL,
       });
-      
+
       if (!coins.data || coins.data.length === 0) {
         throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
       }
@@ -74,7 +75,7 @@ export default class Core {
         ],
       });
 
-      await transaction.transferObjects([stakedCoin], this.address);
+      await transaction.transferObjects([stakedCoin], this.acc);
 
       // Eksekusi transaksi
       await this.executeTx(transaction);
@@ -82,7 +83,7 @@ export default class Core {
       if (error.message && error.message.includes("equivocated")) {
         console.log("Equivocated error: ", error.message);
       } else {
-        throw error;
+        console.log("Error staking WAL:", error);
       }
     }
   }
@@ -96,10 +97,7 @@ export default class Core {
       });
       console.log(`Tx Executed: ${result.digest}`);
     } catch (error) {
-      throw error;
+      console.log("Error executing transaction:", error);
     }
   }
 }
-
-const core = new Core(privateKey);
-core.stakeWalToOperator();  // Memanggil fungsi staking
