@@ -9,14 +9,18 @@ import logger from './app/src/utils/logger.js';
 
 export default class Core {
   constructor() {
-    // Membaca private key dari file 'data.txt'
-    const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
-    this.keypair = Ed25519Keypair.fromSecretKey(decodeSuiPrivateKey(privateKey).secretKey);
-    this.acc = this.keypair.getPublicKey().toString(); // Dapatkan alamat Sui dari kunci publik
-    console.log("Alamat yang digunakan:", this.acc); // Tambahkan log untuk melihat alamat
-    this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
-    this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
-    this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
+    try {
+      // Membaca private key dari file 'data.txt'
+      const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
+      this.keypair = Ed25519Keypair.fromSecretKey(decodeSuiPrivateKey(privateKey).secretKey);
+      this.acc = this.keypair.getPublicKey().toString(); // Dapatkan alamat Sui dari kunci publik
+      console.log("Alamat yang digunakan:", this.acc); // Tambahkan log untuk melihat alamat
+      this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
+      this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
+      this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
+    } catch (error) {
+      console.error("Error initializing Core:", error);
+    }
   }
 
   async stakeWalToOperator() {
@@ -27,7 +31,7 @@ export default class Core {
         owner: this.acc,
         coinType: COINENUM.WAL,
       });
-      
+
       console.log("Koin yang didapat:", coins); // Logging koin
 
       if (!coins.data || coins.data.length === 0) {
@@ -93,7 +97,7 @@ export default class Core {
       // Eksekusi transaksi
       await this.executeTx(transaction);
     } catch (error) {
-      console.log("Error staking WAL:", error); // Logging error
+      console.error("Error staking WAL:", error); // Logging error
     }
   }
 
@@ -106,6 +110,7 @@ export default class Core {
       });
       console.log(`Tx Executed: ${result.digest}`);
     } catch (error) {
+      console.error("Error executing transaction:", error);
       throw error;
     }
   }
