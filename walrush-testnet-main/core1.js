@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { ethers } from 'ethers';
+import { Config } from '../../../config/config.js'; // Pastikan jalur ini benar
 
 // COINENUM definition
 export class COINENUM {
@@ -8,16 +9,22 @@ export class COINENUM {
   static STAKENODEOPERATOR = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a";
 }
 
+// RPC configuration
+export class RPC {
+  static NETWORK = Config.RPC.NETWORK ?? "testnet"; // Pastikan ada properti ini di Config
+  static EXPLORER = Config.RPC.EXPLORER ?? "https://testnet.suivision.xyz/";
+}
+
 // Load private key from data.txt
 const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
-const provider = new ethers.providers.JsonRpcProvider('URL_NODE_WALRUS'); // Ganti dengan URL node Walrus Anda
+const provider = new ethers.providers.JsonRpcProvider(RPC.EXPLORER); // Menggunakan URL RPC dari Config
 const wallet = new ethers.Wallet(privateKey, provider);
 
 async function stakeWAL() {
   try {
     // Check wallet balance
     const balance = await wallet.getBalance();
-    const walBalance = ethers.utils.formatUnits(balance, 18); // Ganti 18 dengan jumlah desimal yang benar untuk WAL
+    const walBalance = ethers.utils.formatUnits(balance, 18); // Ganti 18 jika jumlah desimal berbeda
 
     console.log(`Address: ${wallet.address}`);
     console.log(`WAL Balance: ${walBalance}`);
@@ -29,7 +36,7 @@ async function stakeWAL() {
     }
 
     // Prepare transaction to stake WAL
-    const stakingAmount = ethers.utils.parseUnits('1.0', 18); // Ganti 18 dengan jumlah desimal yang benar untuk WAL
+    const stakingAmount = ethers.utils.parseUnits('1.0', 18); // Ganti 18 jika jumlah desimal berbeda
     const tx = {
       to: COINENUM.STAKENODEOPERATOR,
       value: stakingAmount,
