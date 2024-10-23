@@ -14,6 +14,10 @@ import { COINENUM } from "./app/src/core/coin/coin_enum.js"; // Jalur ini sesuai
 import logger from "./app/src/utils/logger.js"; // Pastikan jalur ini sesuai
 import { Helper } from "./app/src/utils/helper.js"; // Menggunakan kurung kurawal
 
+console.log("Memulai eksekusi core1.js");
+
+// Kode lainnya...
+
 export default class Core {
   constructor() {
     this.loadPrivateKey();
