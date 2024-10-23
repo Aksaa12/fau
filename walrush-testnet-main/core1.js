@@ -19,7 +19,7 @@ console.log("Memulai eksekusi core1.js");
 // Kode lainnya...
 
 export default class Core {
-constructor() {
+  constructor() {
     this.loadPrivateKey();
     this.txCount = 0;
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
@@ -27,21 +27,19 @@ constructor() {
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
 
     // Panggil metode staking
-    this.stakeWalToOperator().then(() => {
+    this.stakeWalToOperator()
+      .then(() => {
         console.log("Staking completed.");
-    }).catch(err => {
+      })
+      .catch(err => {
         console.error("Staking failed:", err);
-    });
-}
-console.log("Memulai staking...");
-await this.stakeWalToOperator();
-console.log("Staking selesai.");
-
+      });
+  }
 
   loadPrivateKey() {
     try {
       const data = fs.readFileSync('data.txt', 'utf8');
-      this.acc = data.trim(); // Load the private key from data.txt
+      this.acc = data.trim();
       const decodedPrivateKey = decodeSuiPrivateKey(this.acc);
       this.wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
       this.address = this.wallet.getPublicKey().toSuiAddress();
