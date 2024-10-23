@@ -36,13 +36,19 @@ export default class Core {
 
         // Logging semua koin yang didapat
         console.log("Koin yang didapat:", JSON.stringify(coins, null, 2)); // Logging detail koin
+        
+        // Tambahkan log untuk memeriksa status response
+        if (!coins || !coins.data) {
+            console.error("Tidak ada data koin yang diterima.");
+            return; // Keluar dari fungsi jika tidak ada data
+        }
 
         // Tambahkan log untuk menunjukkan alamat dan jenis koin
         console.log(`Alamat Akun: ${this.acc}`);
         console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
 
         // Tampilkan jumlah koin WAL yang dimiliki
-        const totalWalCoins = coins.data ? coins.data.reduce((total, coin) => total + BigInt(coin.balance), BigInt(0)) : BigInt(0);
+        const totalWalCoins = coins.data.reduce((total, coin) => total + BigInt(coin.balance), BigInt(0));
         console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / BigInt(MIST_PER_SUI)); // Konversi ke SUI
 
         if (!coins.data || coins.data.length === 0) {
@@ -67,6 +73,7 @@ export default class Core {
         console.error("Error staking WAL:", error); // Logging error
     }
 }
+
 
 
   async executeTx(transaction) {
