@@ -13,7 +13,6 @@ import { Config } from "./app/config/config.js"; // Sesuaikan jalur sesuai kebut
 import { COINENUM } from "./app/src/core/coin/coin_enum.js"; // Jalur ini sesuai dengan struktur direktori Anda
 import logger from "./app/src/utils/logger.js"; // Pastikan jalur ini sesuai
 import { Helper } from "./app/src/utils/helper.js"; // Menggunakan kurung kurawal
-/ Atau sesuaikan dengan jalur yang benar
 
 export default class Core {
   constructor() {
