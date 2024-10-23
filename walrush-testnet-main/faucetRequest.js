@@ -19,12 +19,13 @@ async function requestFaucet(privateKey) {
     const wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
     const address = wallet.getPublicKey().toSuiAddress();
 
-    console.log("Meminta 1 SUI untuk alamat:", address);
+    console.log("Meminta 100 SUI untuk alamat:", address);
 
-    // Meminta 1 SUI dari faucet
+    // Meminta 100 SUI dari faucet
     const response = await requestSuiFromFaucetV0({
       host: getFaucetHost("testnet"),
       recipient: address,
+      amount: 100 * Math.pow(10, 9) // Mengatur jumlah ke 100 SUI (dalam unit terkecil)
     });
 
     console.log("Respon faucet untuk alamat", address, ":", response);
