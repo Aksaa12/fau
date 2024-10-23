@@ -23,16 +23,21 @@ export default class Core {
     }
   }
 
-  async getAccountInfo() {
+async getAccountInfo() {
     try {
-      const accountInfo = await this.client.getAccount(this.acc);
-      console.log("Account Info:", accountInfo);
-      return accountInfo;
+        // Attempt to get account info using getCoins
+        const coins = await this.client.getCoins({ owner: this.acc });
+        this.address = coins.data[0]?.owner || null; // Adjust this line based on your logic
+        if (!this.address) {
+            throw new Error("No address found for the account.");
+        }
+        console.log("Account info retrieved:", this.address);
     } catch (error) {
-      console.error("Error getting account info:", error);
-      throw error;
+        console.error("Error getting account info:", error);
+        throw error; // Rethrow the error for handling in the calling method
     }
-  }
+}
+
 
   async stakeWalToOperator() {
     try {
