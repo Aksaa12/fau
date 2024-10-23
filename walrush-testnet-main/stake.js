@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
@@ -11,7 +10,8 @@ export default class Core {
   constructor() {
     // Membaca private key dari file 'data.txt'
     const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
-    this.acc = privateKey; 
+    this.wallet = Ed25519Keypair.fromSecretKey(decodeSuiPrivateKey(privateKey)); // Mendapatkan wallet dari private key
+    this.acc = this.wallet.getPublicKey().toString(); // Mendapatkan alamat dari wallet
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
@@ -99,11 +99,12 @@ export default class Core {
     try {
       logger.info("Executing Tx ...");
       const result = await this.client.signAndExecuteTransaction({
-        signer: this.acc,
+        signer: this.wallet, // Menggunakan wallet untuk signing
         transaction: transaction,
       });
       console.log(`Tx Executed: ${result.digest}`);
     } catch (error) {
+      console.log("Error executing transaction:", error); // Logging error eksekusi
       throw error;
     }
   }
