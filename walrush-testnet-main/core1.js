@@ -42,7 +42,7 @@ export default class Core {
     }
   }
 
-  async stakeWalToOperator() {
+ async stakeWalToOperator() {
     console.log("Memulai staking..."); // Log untuk memulai staking
     try {
         await Helper.delay(1000, this.acc, "Try To Stake WAL to Operator", this);
@@ -74,7 +74,7 @@ export default class Core {
 
         // Pastikan bahwa poolObject.data.objectId benar dan sesuai
         const transaction = new Transaction();
-        
+
         // Pisahkan koin yang akan di-stake
         const coinToStake = await transaction.splitCoins(
             transaction.object(coin.coinObjectId),
@@ -86,8 +86,8 @@ export default class Core {
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
                 transaction.object(poolObject.data.objectId), // ID objek pool
-                transaction.object(coinToStake), // Koin yang di-stake
-                amountToStake.toString(), // Jumlah yang di-stake sebagai string jika diperlukan
+                coinToStake, // Koin yang di-stake
+                amountToStake, // Jumlah yang di-stake sebagai BigInt
             ],
         });
 
@@ -98,6 +98,7 @@ export default class Core {
         throw error;
     }
 }
+
   async executeTx(transaction) {
     try {
       await Helper.delay(1000, this.acc, "Executing Tx ...", this);
