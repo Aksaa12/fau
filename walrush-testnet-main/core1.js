@@ -19,13 +19,24 @@ console.log("Memulai eksekusi core1.js");
 // Kode lainnya...
 
 export default class Core {
-  constructor() {
+constructor() {
     this.loadPrivateKey();
     this.txCount = 0;
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
-  }
+
+    // Panggil metode staking
+    this.stakeWalToOperator().then(() => {
+        console.log("Staking completed.");
+    }).catch(err => {
+        console.error("Staking failed:", err);
+    });
+}
+console.log("Memulai staking...");
+await this.stakeWalToOperator();
+console.log("Staking selesai.");
+
 
   loadPrivateKey() {
     try {
