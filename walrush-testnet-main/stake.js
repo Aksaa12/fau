@@ -13,7 +13,7 @@ export default class Core {
       // Membaca private key dari file 'data.txt'
       const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
       this.keypair = Ed25519Keypair.fromSecretKey(decodeSuiPrivateKey(privateKey).secretKey);
-      this.acc = this.keypair.getPublicKey().toString(); // Dapatkan alamat Sui dari kunci publik
+      this.acc = this.keypair.getPublicKey().toBase64(); // Menggunakan toBase64()
       console.log("Alamat yang digunakan:", this.acc); // Tambahkan log untuk melihat alamat
       this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
       this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
