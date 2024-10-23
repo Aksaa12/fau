@@ -9,7 +9,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
 import fs from 'fs';
-import { Config } from "../../config/config.js";
+import { Config } from "./app/config/config.js"; // Sesuaikan jalur sesuai kebutuhan
+
 import { COINENUM } from "./coin/coin_enum.js";
 import logger from "../utils/logger.js";
 import Helper from "../utils/helper.js"; // Adjust this import if necessary
