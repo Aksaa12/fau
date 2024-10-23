@@ -100,3 +100,6 @@ export default class Core {
     }
   }
 }
+
+const core = new Core(privateKey);
+core.stakeWalToOperator();  // Memanggil fungsi staking
