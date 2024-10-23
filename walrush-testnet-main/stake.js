@@ -27,49 +27,45 @@ export default class Core {
 
   async stakeWalToOperator() {
     try {
-        await this.mergeCoin();
+        await this.getAccountInfo(); // Ambil info akun
+        await this.mergeCoin(); // Pastikan fungsi mergeCoin ada
         await Helper.delay(1000, this.acc, "Try To Stake Wal to Operator", this);
+        
         const coins = await this.client.getCoins({
             owner: this.address,
             coinType: COINENUM.WAL,
         });
+
+        if (!coins.data || coins.data.length === 0) {
+            console.log("No WAL coins available to stake.");
+            return;
+        }
+
         const coin = coins.data[0]; // Ambil koin pertama
         const balance = coin.balance;
+
+        // Logika untuk mengambil pool dan operator object
         const poolObject = await this.client.getObject({
             id: this.walrusPoolObjectId,
-            options: {
-                showBcs: true,
-                showContent: true,
-                showDisplay: true,
-                showOwner: true,
-                showPreviousTransaction: true,
-                showStorageRebate: true,
-                showType: true,
-            },
+            options: { /*...*/ },
         });
         const operatorObject = await this.client.getObject({
             id: Config.STAKENODEOPERATOR,
-            options: {
-                showBcs: true,
-                showContent: true,
-                showDisplay: true,
-                showOwner: true,
-                showPreviousTransaction: true,
-                showStorageRebate: true,
-                showType: true,
-            },
+            options: { /*...*/ },
         });
+
         const transaction = new Transaction();
         const sharedPoolObject = transaction.sharedObjectRef({
             objectId: poolObject.data.objectId,
-            initialSharedVersion:
-                poolObject.data.owner.Shared.initial_shared_version,
+            initialSharedVersion: poolObject.data.owner.Shared.initial_shared_version,
             mutable: true,
         });
+
         const coinToStake = await transaction.splitCoins(
             transaction.object(coin.coinObjectId),
             [balance] // Memisahkan koin sesuai dengan saldo
         );
+
         const stakedCoin = transaction.moveCall({
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
@@ -78,16 +74,17 @@ export default class Core {
                 transaction.object(operatorObject.data.objectId),
             ],
         });
+
         await transaction.transferObjects([stakedCoin], this.address);
         await this.executeTx(transaction);
     } catch (error) {
+        console.error("Error in staking WAL to operator:", error);
         if (error.message && error.message.includes("equivocated")) {
             await Helper.delay(1000, this.acc, error.message, this);
         }
         throw error;
     }
 }
-
 
   async executeTx(transaction) {
     try {
