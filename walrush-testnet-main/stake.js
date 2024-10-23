@@ -26,55 +26,48 @@ export default class Core {
   }
 
   async stakeWalToOperator() {
-    console.log("Memulai proses staking..."); // Logging untuk memulai proses
+    console.log("Memulai proses staking...");
     try {
-        // Mengambil informasi koin WAL yang dimiliki akun
+        console.log("Menggunakan COINENUM.WAL:", COINENUM.WAL); // Menambahkan log ini
         const coins = await this.client.getCoins({
             owner: this.acc,
             coinType: COINENUM.WAL,
         });
 
-        // Logging semua koin yang didapat
-        console.log("Koin yang didapat:", JSON.stringify(coins, null, 2)); // Logging detail koin
-        
-        // Tambahkan log untuk memeriksa status response
+        console.log("Koin yang didapat:", JSON.stringify(coins, null, 2));
+
         if (!coins || !coins.data) {
             console.error("Tidak ada data koin yang diterima.");
-            return; // Keluar dari fungsi jika tidak ada data
+            return;
         }
 
-        // Tambahkan log untuk menunjukkan alamat dan jenis koin
         console.log(`Alamat Akun: ${this.acc}`);
         console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
 
-        // Tampilkan jumlah koin WAL yang dimiliki
         const totalWalCoins = coins.data.reduce((total, coin) => total + BigInt(coin.balance), BigInt(0));
-        console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / BigInt(MIST_PER_SUI)); // Konversi ke SUI
+        console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / BigInt(MIST_PER_SUI));
 
         if (!coins.data || coins.data.length === 0) {
             throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
         }
 
         const coin = coins.data[0];
-        const balance = BigInt(coin.balance); // Menggunakan BigInt untuk balance
+        const balance = BigInt(coin.balance);
 
-        console.log("Saldo koin:", balance); // Logging saldo
+        console.log("Saldo koin:", balance);
 
-        // Cek apakah jumlah WAL sama dengan 1
         const amountWal = Number((balance / BigInt(MIST_PER_SUI)).toString());
         if (amountWal !== 1) {
             throw new Error(`Jumlah WAL yang dimiliki adalah ${amountWal}. Hanya bisa stake 1 WAL.`);
         }
 
-        console.log("Jumlah WAL sesuai untuk staking."); // Logging jumlah WAL sesuai
+        console.log("Jumlah WAL sesuai untuk staking.");
 
-        // Sisa kode Anda untuk mendapatkan objek pool dan transaksi...
+        // Sisa kode untuk melakukan staking...
     } catch (error) {
-        console.error("Error staking WAL:", error); // Logging error
+        console.error("Error staking WAL:", error);
     }
 }
-
-
 
   async executeTx(transaction) {
     try {
