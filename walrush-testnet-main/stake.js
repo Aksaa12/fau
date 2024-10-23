@@ -26,48 +26,68 @@ export default class Core {
   }
 
   async stakeWalToOperator() {
-    console.log("Memulai proses staking...");
     try {
-        console.log("Menggunakan COINENUM.WAL:", COINENUM.WAL); // Menambahkan log ini
+        await this.mergeCoin();
+        await Helper.delay(1000, this.acc, "Try To Stake Wal to Operator", this);
         const coins = await this.client.getCoins({
-            owner: this.acc,
+            owner: this.address,
             coinType: COINENUM.WAL,
         });
-
-        console.log("Koin yang didapat:", JSON.stringify(coins, null, 2));
-
-        if (!coins || !coins.data) {
-            console.error("Tidak ada data koin yang diterima.");
-            return;
-        }
-
-        console.log(`Alamat Akun: ${this.acc}`);
-        console.log(`Jenis Koin yang dicari: ${COINENUM.WAL}`);
-
-        const totalWalCoins = coins.data.reduce((total, coin) => total + BigInt(coin.balance), BigInt(0));
-        console.log("Jumlah total koin WAL yang dimiliki:", totalWalCoins / BigInt(MIST_PER_SUI));
-
-        if (!coins.data || coins.data.length === 0) {
-            throw new Error("Tidak ada koin WAL yang tersedia untuk staking.");
-        }
-
-        const coin = coins.data[0];
-        const balance = BigInt(coin.balance);
-
-        console.log("Saldo koin:", balance);
-
-        const amountWal = Number((balance / BigInt(MIST_PER_SUI)).toString());
-        if (amountWal !== 1) {
-            throw new Error(`Jumlah WAL yang dimiliki adalah ${amountWal}. Hanya bisa stake 1 WAL.`);
-        }
-
-        console.log("Jumlah WAL sesuai untuk staking.");
-
-        // Sisa kode untuk melakukan staking...
+        const coin = coins.data[0]; // Ambil koin pertama
+        const balance = coin.balance;
+        const poolObject = await this.client.getObject({
+            id: this.walrusPoolObjectId,
+            options: {
+                showBcs: true,
+                showContent: true,
+                showDisplay: true,
+                showOwner: true,
+                showPreviousTransaction: true,
+                showStorageRebate: true,
+                showType: true,
+            },
+        });
+        const operatorObject = await this.client.getObject({
+            id: Config.STAKENODEOPERATOR,
+            options: {
+                showBcs: true,
+                showContent: true,
+                showDisplay: true,
+                showOwner: true,
+                showPreviousTransaction: true,
+                showStorageRebate: true,
+                showType: true,
+            },
+        });
+        const transaction = new Transaction();
+        const sharedPoolObject = transaction.sharedObjectRef({
+            objectId: poolObject.data.objectId,
+            initialSharedVersion:
+                poolObject.data.owner.Shared.initial_shared_version,
+            mutable: true,
+        });
+        const coinToStake = await transaction.splitCoins(
+            transaction.object(coin.coinObjectId),
+            [balance] // Memisahkan koin sesuai dengan saldo
+        );
+        const stakedCoin = transaction.moveCall({
+            target: `${this.walrusAddress}::staking::stake_with_pool`,
+            arguments: [
+                sharedPoolObject,
+                transaction.object(coinToStake),
+                transaction.object(operatorObject.data.objectId),
+            ],
+        });
+        await transaction.transferObjects([stakedCoin], this.address);
+        await this.executeTx(transaction);
     } catch (error) {
-        console.error("Error staking WAL:", error);
+        if (error.message && error.message.includes("equivocated")) {
+            await Helper.delay(1000, this.acc, error.message, this);
+        }
+        throw error;
     }
 }
+
 
   async executeTx(transaction) {
     try {
