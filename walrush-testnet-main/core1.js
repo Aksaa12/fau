@@ -1,87 +1,52 @@
-import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { Transaction } from "@mysten/sui/transactions";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { MIST_PER_SUI } from "@mysten/sui/utils";
-import { COINENUM } from "./coin/coin_enum.js"; // Pastikan jalur sudah benar
+import fs from 'fs';
+import { ethers } from 'ethers';
 
+// COINENUM definition
+export class COINENUM {
+  static SUI = "0x2::sui::SUI";
+  static WAL = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
+  static STAKENODEOPERATOR = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a";
+}
 
-import { Config } from "../../config/config.js";
+// Load private key from data.txt
+const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
+const provider = new ethers.providers.JsonRpcProvider('URL_NODE_WALRUS'); // Ganti dengan URL node Walrus Anda
+const wallet = new ethers.Wallet(privateKey, provider);
 
-export default class Core {
-  constructor(privateKey) {
-    this.acc = privateKey;
-    this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
-    this.walrusAddress =
-      "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
-    this.walrusPoolObjectId =
-      "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
-  }
+async function stakeWAL() {
+  try {
+    // Check wallet balance
+    const balance = await wallet.getBalance();
+    const walBalance = ethers.utils.formatUnits(balance, 18); // Ganti 18 dengan jumlah desimal yang benar untuk WAL
 
-  async getAccountInfo() {
-    const decodedPrivateKey = decodeSuiPrivateKey(this.acc);
-    this.wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
-    this.address = this.wallet.getPublicKey().toSuiAddress();
-    console.log(`Address: ${this.address}`);
-  }
+    console.log(`Address: ${wallet.address}`);
+    console.log(`WAL Balance: ${walBalance}`);
 
-  async getBalance() {
-    const balanceInfo = await this.client.getAllBalances({
-      owner: this.address,
-    });
-    const walBalance = balanceInfo.find(
-      (b) => b.coinType === COINENUM.WAL
-    ).totalBalance;
-
-    console.log(`WAL Balance: ${parseFloat((walBalance / MIST_PER_SUI).toFixed(2))} WAL`);
-    return walBalance;
-  }
-
-  async stakeWalToOperator() {
-    const walBalance = await this.getBalance();
-    if (walBalance < 1) {
-      console.log("Insufficient WAL balance for staking.");
+    // Check if balance is sufficient for staking
+    if (parseFloat(walBalance) < 1) {
+      console.log("Insufficient balance to stake 1 WAL");
       return;
     }
 
-    console.log("Staking 1 WAL to Walrus staking node...");
-    const transaction = new Transaction();
-    const coinToStake = await transaction.splitCoins(transaction.gas, [1 * MIST_PER_SUI]);
+    // Prepare transaction to stake WAL
+    const stakingAmount = ethers.utils.parseUnits('1.0', 18); // Ganti 18 dengan jumlah desimal yang benar untuk WAL
+    const tx = {
+      to: COINENUM.STAKENODEOPERATOR,
+      value: stakingAmount,
+    };
 
-    const sharedPoolObject = transaction.sharedObjectRef({
-      objectId: this.walrusPoolObjectId,
-      initialSharedVersion: 0, // Set this as needed
-      mutable: true,
-    });
+    // Send transaction
+    const transactionResponse = await wallet.sendTransaction(tx);
+    console.log(`Staking WAL... Transaction Hash: ${transactionResponse.hash}`);
 
-    const stakedCoin = transaction.moveCall({
-      target: `${this.walrusAddress}::staking::stake_with_pool`,
-      arguments: [
-        sharedPoolObject,
-        transaction.object(coinToStake),
-        this.address,
-      ],
-    });
+    // Wait for transaction to be confirmed
+    await transactionResponse.wait();
+    console.log("Staking successful!");
 
-    await this.executeTx(transaction);
-  }
-
-  async executeTx(transaction) {
-    console.log("Executing transaction...");
-    const result = await this.client.signAndExecuteTransaction({
-      signer: this.wallet,
-      transaction: transaction,
-    });
-
-    console.log(`Transaction executed: ${result.digest}`);
-    await this.getBalance();
+  } catch (error) {
+    console.error("Error during staking:", error);
   }
 }
 
-// Usage example
-(async () => {
-  const privateKey = "your-private-key"; // Replace with your actual private key
-  const core = new Core(privateKey);
-  await core.getAccountInfo();
-  await core.stakeWalToOperator();
-})();
+// Execute staking
+stakeWAL();
