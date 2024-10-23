@@ -1,23 +1,20 @@
 import fs from 'fs';
 import { ethers } from 'ethers';
-import { Config } from '../../../config/config.js'; // Pastikan jalur ini benar
 
 // COINENUM definition
 export class COINENUM {
   static SUI = "0x2::sui::SUI";
   static WAL = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
-  static STAKENODEOPERATOR = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a";
+  static STAKENODEOPERATOR = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a"; // Alamat node staking
 }
 
 // RPC configuration
-export class RPC {
-  static NETWORK = Config.RPC.NETWORK ?? "testnet"; // Pastikan ada properti ini di Config
-  static EXPLORER = Config.RPC.EXPLORER ?? "https://testnet.suivision.xyz/";
-}
+const RPC_NETWORK = "testnet"; // Ganti dengan "mainnet" jika diperlukan
+const RPC_EXPLORER = "https://testnet.suivision.xyz/"; // URL RPC
 
 // Load private key from data.txt
 const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
-const provider = new ethers.providers.JsonRpcProvider(RPC.EXPLORER); // Menggunakan URL RPC dari Config
+const provider = new ethers.providers.JsonRpcProvider(RPC_EXPLORER);
 const wallet = new ethers.Wallet(privateKey, provider);
 
 async function stakeWAL() {
