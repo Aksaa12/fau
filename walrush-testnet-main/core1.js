@@ -1,56 +1,111 @@
-import fs from 'fs';
-import { ethers } from 'ethers';
+import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { MIST_PER_SUI } from "@mysten/sui/utils";
+import { Transaction } from "@mysten/sui/transactions";
+import { Config } from "../../config/config.js";
+import { COINENUM } from "./coin/coin_enum.js";
 
-// COINENUM definition
-export class COINENUM {
-  static SUI = "0x2::sui::SUI";
-  static WAL = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
-  static STAKENODEOPERATOR = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a"; // Alamat node staking
-}
+export default class Core {
+  constructor(privateKey) {
+    this.acc = privateKey;
+    this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
+    this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
+    this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
+  }
 
-// RPC configuration
-const RPC_NETWORK = "testnet"; // Ganti dengan "mainnet" jika diperlukan
-const RPC_EXPLORER = "https://testnet.suivision.xyz/"; // URL RPC
+  async getAccountInfo() {
+    const decodedPrivateKey = decodeSuiPrivateKey(this.acc);
+    this.wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
+    this.address = this.wallet.getPublicKey().toSuiAddress();
+  }
 
-// Load private key from data.txt
-const privateKey = fs.readFileSync('data.txt', 'utf8').trim();
-const provider = new ethers.providers.JsonRpcProvider(RPC_EXPLORER);
-const wallet = new ethers.Wallet(privateKey, provider);
-
-async function stakeWAL() {
-  try {
-    // Check wallet balance
-    const balance = await wallet.getBalance();
-    const walBalance = ethers.utils.formatUnits(balance, 18); // Ganti 18 jika jumlah desimal berbeda
-
-    console.log(`Address: ${wallet.address}`);
-    console.log(`WAL Balance: ${walBalance}`);
-
-    // Check if balance is sufficient for staking
-    if (parseFloat(walBalance) < 1) {
-      console.log("Insufficient balance to stake 1 WAL");
+  async mergeCoin() {
+    const coins = await this.client.getCoins({
+      owner: this.address,
+      coinType: COINENUM.WAL,
+    });
+    if (!coins.data || coins.data.length < 2) {
       return;
     }
+    const transaction = new Transaction();
+    const primaryCoin = coins.data[0].coinObjectId;
+    const coinsToMerge = coins.data.slice(1).map((coin) => coin.coinObjectId);
+    await transaction.mergeCoins(
+      transaction.object(primaryCoin),
+      coinsToMerge.map((coinId) => transaction.object(coinId))
+    );
+    await this.executeTx(transaction);
+  }
 
-    // Prepare transaction to stake WAL
-    const stakingAmount = ethers.utils.parseUnits('1.0', 18); // Ganti 18 jika jumlah desimal berbeda
-    const tx = {
-      to: COINENUM.STAKENODEOPERATOR,
-      value: stakingAmount,
-    };
+  async stakeWalToOperator() {
+    try {
+      await this.mergeCoin();
+      const coins = await this.client.getCoins({
+        owner: this.address,
+        coinType: COINENUM.WAL,
+      });
 
-    // Send transaction
-    const transactionResponse = await wallet.sendTransaction(tx);
-    console.log(`Staking WAL... Transaction Hash: ${transactionResponse.hash}`);
+      if (!coins.data || coins.data.length === 0) {
+        return;
+      }
 
-    // Wait for transaction to be confirmed
-    await transactionResponse.wait();
-    console.log("Staking successful!");
+      const coin = coins.data[0];
+      const amountToStake = 1 * MIST_PER_SUI;
 
-  } catch (error) {
-    console.error("Error during staking:", error);
+      const poolObject = await this.client.getObject({
+        id: this.walrusPoolObjectId,
+        options: {
+          showBcs: true,
+          showContent: true,
+          showOwner: true,
+        },
+      });
+
+      const transaction = new Transaction();
+      const sharedPoolObject = transaction.sharedObjectRef({
+        objectId: poolObject.data.objectId,
+        initialSharedVersion: poolObject.data.owner.Shared.initial_shared_version,
+        mutable: true,
+      });
+
+      const coinToStake = await transaction.splitCoins(
+        transaction.object(coin.coinObjectId),
+        [amountToStake]
+      );
+
+      const stakedCoin = transaction.moveCall({
+        target: `${this.walrusAddress}::staking::stake_with_pool`,
+        arguments: [
+          sharedPoolObject,
+          transaction.object(coinToStake),
+        ],
+      });
+
+      await transaction.transferObjects([stakedCoin], this.address);
+      await this.executeTx(transaction);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async executeTx(transaction) {
+    const result = await this.client.signAndExecuteTransaction({
+      signer: this.wallet,
+      transaction: transaction,
+    });
+    await this.getBalance();
+  }
+
+  async getBalance() {
+    this.balance = await this.client.getAllBalances({
+      owner: this.address,
+    });
+    this.balance = this.balance.map((balance) => {
+      balance.totalBalance = parseFloat(
+        (Number(balance.totalBalance) / Number(MIST_PER_SUI)).toFixed(2)
+      );
+      return balance;
+    });
   }
 }
-
-// Execute staking
-stakeWAL();
