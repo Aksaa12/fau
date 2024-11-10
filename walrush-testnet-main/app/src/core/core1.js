@@ -89,17 +89,16 @@ export default class Core {
         const coin = coins.data[0];
         const amountToStake = 1;
 
-        // Check for correct arguments here
         const transaction = new Transaction();
         const coinToStake = await transaction.splitCoins(
             transaction.object(coin.coinObjectId),
-            [BigInt(amountToStake) * BigInt(MIST_PER_SUI)] // Ensure this is converted to BigInt if required
+            [BigInt(amountToStake) * BigInt(MIST_PER_SUI)]
         );
 
         const stakedCoin = transaction.moveCall({
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
-                transaction.pure(this.walrusPoolObjectId), // Use transaction.pure if passing a simple value like ID
+                transaction.object(this.walrusPoolObjectId), // Use transaction.object here for object ID
                 transaction.object(coinToStake),
             ],
         });
