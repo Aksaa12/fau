@@ -8,12 +8,24 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
-import fs from 'fs';
-import { COINENUM } from "./app/src/core/coin/coin_enum.js";
+import fs from fs;
 import logger from "./app/src/utils/logger.js";
 import { Helper } from "./app/src/utils/helper.js";
 
 console.log("Memulai eksekusi core1.js");
+
+class COINENUM {
+  static SUI = "0x2::sui::SUI";
+  static WAL = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
+
+  static RPC = {
+    NETWORK: "testnet",
+    EXPLORER: "https://testnet.suivision.xyz/",
+  };
+
+  static STAKENODEOPERATOR =
+    "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a"; // Operator: Mysten Labs 0
+}
 
 export default class Core {
   constructor() {
@@ -21,7 +33,7 @@ export default class Core {
     console.log("Private key loaded:", this.acc);
 
     this.txCount = 0;
-    this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
+    this.client = new SuiClient({ url: getFullnodeUrl(COINENUM.RPC.NETWORK) });
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
 
