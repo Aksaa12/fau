@@ -9,8 +9,6 @@ import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
 import fs from 'fs';
-import logger from "./app/src/utils/logger.js";
-import { Helper } from "./app/src/utils/helper.js";
 
 console.log("Memulai eksekusi core1.js");
 
@@ -60,9 +58,6 @@ export default class Core {
 
   async getBalance(showLogs = false) {
     try {
-      if (showLogs) {
-        await Helper.delay(500, this.acc, "Getting Account Balance...", this);
-      }
       this.balance = await this.client.getAllBalances({
         owner: this.address,
       });
@@ -72,14 +67,6 @@ export default class Core {
         );
         return balance;
       });
-      if (showLogs) {
-        await Helper.delay(
-          1000,
-          this.acc,
-          "Successfully Get Account Balance",
-          this
-        );
-      }
     } catch (error) {
       console.error("Error getting balance:", error);
       throw error;
@@ -89,7 +76,6 @@ export default class Core {
   async stakeWalToOperator() {
     console.log("Memulai staking...");
     try {
-      await Helper.delay(1000, this.acc, "Try To Stake WAL to Operator", this);
       const coins = await this.client.getCoins({
         owner: this.address,
         coinType: COINENUM.WAL,
@@ -138,18 +124,11 @@ export default class Core {
 
   async executeTx(transaction) {
     try {
-      await Helper.delay(1000, this.acc, "Executing Tx ...", this);
-      logger.info(await transaction.toJSON());
       const result = await this.client.signAndExecuteTransaction({
         signer: this.wallet,
         transaction: transaction,
       });
-      await Helper.delay(
-        3000,
-        this.acc,
-        `Tx Executed : ${result.digest}`,
-        this
-      );
+      console.log(`Tx Executed: ${result.digest}`);
       await this.getBalance();
     } catch (error) {
       console.error("Error executing transaction:", error);
