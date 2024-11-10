@@ -86,7 +86,7 @@ export default class Core {
       }
 
       const coin = coins.data[0];
-      const amountToStake = 1;
+      const amountToStake = BigInt(1);
 
       const poolObject = await this.client.getObject({
         id: this.walrusPoolObjectId,
