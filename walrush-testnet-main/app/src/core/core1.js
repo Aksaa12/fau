@@ -9,25 +9,23 @@ import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
 import fs from 'fs';
-import { Config } from "./app/config/config.js"; // Sesuaikan jalur sesuai kebutuhan
-import { COINENUM } from "./app/src/core/coin/coin_enum.js"; // Jalur ini sesuai dengan struktur direktori Anda
-import logger from "./app/src/utils/logger.js"; // Pastikan jalur ini sesuai
-import { Helper } from "./app/src/utils/helper.js"; // Menggunakan kurung kurawal
+import { Config } from "./app/config/config.js";
+import { COINENUM } from "./app/src/core/coin/coin_enum.js";
+import logger from "./app/src/utils/logger.js";
+import { Helper } from "./app/src/utils/helper.js";
 
 console.log("Memulai eksekusi core1.js");
 
-// Kelas Core
 export default class Core {
   constructor() {
     this.loadPrivateKey();
-    console.log("Private key loaded:", this.acc); // Log untuk memastikan kunci privat dimuat
+    console.log("Private key loaded:", this.acc);
 
     this.txCount = 0;
     this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
     this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
     this.walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
 
-    // Panggil metode staking
     this.stakeWalToOperator()
       .then(() => {
         console.log("Staking completed.");
@@ -78,20 +76,20 @@ export default class Core {
   }
 
   async stakeWalToOperator() {
-    console.log("Memulai staking..."); // Log untuk memulai staking
+    console.log("Memulai staking...");
     try {
       await Helper.delay(1000, this.acc, "Try To Stake WAL to Operator", this);
       const coins = await this.client.getCoins({
         owner: this.address,
         coinType: COINENUM.WAL,
       });
-      console.log("Coins found:", coins); // Log untuk menunjukkan koin yang ditemukan
+      console.log("Coins found:", coins);
       if (coins.data.length < 1) {
         throw new Error("No WAL coins available to stake.");
       }
 
-      const coin = coins.data[0]; // Dapatkan koin WAL pertama
-      const amountToStake = 1; // Hanya staking 1 WAL
+      const coin = coins.data[0];
+      const amountToStake = 1;
 
       const poolObject = await this.client.getObject({
         id: this.walrusPoolObjectId,
@@ -108,7 +106,7 @@ export default class Core {
       const transaction = new Transaction();
       const coinToStake = await transaction.splitCoins(
         transaction.object(coin.coinObjectId),
-        [amountToStake * MIST_PER_SUI] // Konversi ke MIST untuk staking
+        [amountToStake * MIST_PER_SUI]
       );
 
       const stakedCoin = transaction.moveCall({
@@ -149,5 +147,4 @@ export default class Core {
   }
 }
 
-// Buat instance dari kelas Core
 const core = new Core();
