@@ -8,7 +8,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { MIST_PER_SUI } from "@mysten/sui/utils";
-import fs from fs;
+import fs from 'fs';
 import logger from "./app/src/utils/logger.js";
 import { Helper } from "./app/src/utils/helper.js";
 
