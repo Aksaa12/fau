@@ -98,8 +98,9 @@ export default class Core {
         const stakedCoin = transaction.moveCall({
             target: `${this.walrusAddress}::staking::stake_with_pool`,
             arguments: [
-                transaction.object(this.walrusPoolObjectId), // Use transaction.object here for object ID
-                transaction.object(coinToStake),
+                transaction.object(this.walrusPoolObjectId),  // Pastikan ID pool benar
+                transaction.object(coinToStake),              // Coin yang akan dipertaruhkan
+                BigInt(amountToStake),                        // Jumlah yang dipertaruhkan
             ],
         });
 
