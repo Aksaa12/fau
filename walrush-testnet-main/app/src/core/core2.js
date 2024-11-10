@@ -1,7 +1,7 @@
+import { Connection, Keypair, TransactionBlock } from '@mysten/sui.js';
 import axios from 'axios';
-import crypto from 'crypto';
 
-// Ganti dengan private key Anda
+// Ganti dengan private key Anda (SUI private key)
 const privateKey = "suiprivkey1qql5mpg03ns03tsn7lax22tt3nupfewtl459vsxakhzkhx72c48qcuk3svp";
 
 // Alamat Node Staking Walrus
@@ -18,26 +18,24 @@ const rpcUrl = "https://testnet.suivision.xyz/";
 
 async function stakeWal() {
   try {
-    // 1. Ambil public key dari private key
-    const publicKey = getPublicKeyFromPrivateKey(privateKey);
+    // 1. Inisialisasi koneksi ke SUI Testnet
+    const connection = new Connection({ fullnode: rpcUrl });
 
-    // 2. Siapkan transaksi untuk staking
-    const transaction = {
-      sender: publicKey,
-      module: "wal",
-      function: "stake",
-      arguments: [
-        stakenodeOperator,
-        walAddress,
-        walrusPoolObjectId,
-      ],
-      gasBudget: 10000,  // Budget gas untuk transaksi
-    };
+    // 2. Inisialisasi Keypair dari private key Anda
+    const keypair = Keypair.fromSecretKey(Buffer.from(privateKey, 'hex'));
 
-    // 3. Tanda tangani transaksi (menggunakan private key)
-    const signedTransaction = signTransaction(transaction, privateKey);
+    // 3. Siapkan transaksi untuk staking
+    const transaction = new TransactionBlock();
+    transaction.moveCall({
+      target: `${walAddress}::wal::stake`,
+      arguments: [stakenodeOperator, walrusPoolObjectId],
+      gasBudget: 10000, // Budget gas untuk transaksi
+    });
 
-    // 4. Kirim transaksi ke RPC SUI untuk dieksekusi
+    // 4. Tandatangani transaksi dengan private key Anda
+    const signedTransaction = await keypair.signTransactionBlock(transaction);
+
+    // 5. Kirim transaksi ke RPC SUI untuk dieksekusi
     const response = await axios.post(rpcUrl, {
       jsonrpc: "2.0",
       method: "sui_sendTransaction",
@@ -45,7 +43,7 @@ async function stakeWal() {
       id: 1,
     });
 
-    // 5. Verifikasi status transaksi
+    // 6. Verifikasi status transaksi
     if (response.data.result.status === "success") {
       console.log("Transaksi staking berhasil!");
     } else {
@@ -53,40 +51,6 @@ async function stakeWal() {
     }
   } catch (error) {
     console.error("Error:", error);
-  }
-}
-
-// Fungsi untuk mendapatkan public key dari private key
-function getPublicKeyFromPrivateKey(privateKey) {
-  try {
-    // Memastikan private key berbentuk Buffer yang benar
-    const privateKeyBuffer = Buffer.from(privateKey, 'hex');
-    const ecdh = crypto.createECDH('secp256k1');
-    ecdh.setPrivateKey(privateKeyBuffer);
-
-    // Menghasilkan public key
-    const publicKey = ecdh.getPublicKey('hex');
-    return publicKey;
-  } catch (error) {
-    console.error("Private key tidak valid:", error);
-    throw new Error("Private key tidak valid untuk kurva yang ditentukan.");
-  }
-}
-
-// Fungsi untuk menandatangani transaksi
-function signTransaction(transaction, privateKey) {
-  try {
-    const sign = crypto.createSign('SHA256');
-    sign.update(JSON.stringify(transaction));
-    const signature = sign.sign(privateKey, 'hex');
-
-    return {
-      ...transaction,
-      signature,
-    };
-  } catch (error) {
-    console.error("Error saat menandatangani transaksi:", error);
-    throw error;
   }
 }
 
