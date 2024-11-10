@@ -18,7 +18,7 @@ const rpcUrl = "https://testnet.suivision.xyz/";
 
 async function stakeWal() {
   try {
-    // 1. Ambil public key dari private key (menggunakan lib crypto atau lib spesifik SUI jika ada)
+    // 1. Ambil public key dari private key
     const publicKey = getPublicKeyFromPrivateKey(privateKey);
 
     // 2. Siapkan transaksi untuk staking
@@ -58,26 +58,36 @@ async function stakeWal() {
 
 // Fungsi untuk mendapatkan public key dari private key
 function getPublicKeyFromPrivateKey(privateKey) {
-  // Untuk contoh ini, kita hanya menggunakan algoritma crypto standar untuk menghasilkan public key
-  // Anda perlu menggunakan pustaka yang sesuai dengan SUI untuk konversi private key -> public key
-  const publicKey = crypto.createECDH('secp256k1');
-  publicKey.setPrivateKey(Buffer.from(privateKey, 'hex'));
-  return publicKey.getPublicKey('hex');
+  try {
+    // Memastikan private key berbentuk Buffer yang benar
+    const privateKeyBuffer = Buffer.from(privateKey, 'hex');
+    const ecdh = crypto.createECDH('secp256k1');
+    ecdh.setPrivateKey(privateKeyBuffer);
+
+    // Menghasilkan public key
+    const publicKey = ecdh.getPublicKey('hex');
+    return publicKey;
+  } catch (error) {
+    console.error("Private key tidak valid:", error);
+    throw new Error("Private key tidak valid untuk kurva yang ditentukan.");
+  }
 }
 
 // Fungsi untuk menandatangani transaksi
 function signTransaction(transaction, privateKey) {
-  // Pseudocode untuk menandatangani transaksi
-  // Anda perlu menggunakan pustaka SUI atau pustaka yang relevan untuk menandatangani transaksi
-  // Misalnya, menggunakan elliptic curve signing, atau menggunakan SDK SUI yang sesuai.
-  const sign = crypto.createSign('SHA256');
-  sign.update(JSON.stringify(transaction));
-  const signature = sign.sign(privateKey, 'hex');
+  try {
+    const sign = crypto.createSign('SHA256');
+    sign.update(JSON.stringify(transaction));
+    const signature = sign.sign(privateKey, 'hex');
 
-  return {
-    ...transaction,
-    signature,
-  };
+    return {
+      ...transaction,
+      signature,
+    };
+  } catch (error) {
+    console.error("Error saat menandatangani transaksi:", error);
+    throw error;
+  }
 }
 
 // Eksekusi staking
