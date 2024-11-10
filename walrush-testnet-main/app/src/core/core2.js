@@ -1,133 +1,84 @@
-import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { Transaction } from "@mysten/sui/transactions";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { MIST_PER_SUI } from "@mysten/sui/utils";
-import fs from 'fs';
+const axios = require('axios');
+const crypto = require('crypto');
 
-console.log("Memulai eksekusi core1.js");
+// Ganti dengan private key Anda
+const privateKey = "suiprivkey1qql5mpg03ns03tsn7lax22tt3nupfewtl459vsxakhzkhx72c48qcuk3svp";
 
-class COINENUM {
-  static SUI = "0x2::sui::SUI";
-  static WAL = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
+// Alamat Node Staking Walrus
+const stakenodeOperator = "0xcf4b9402e7f156bc75082bc07581b0829f081ccfc8c444c71df4536ea33d094a";
 
-  static RPC = {
-    NETWORK: "testnet",
-    EXPLORER: "https://testnet.suivision.xyz/",
+// Alamat WAL yang digunakan untuk staking
+const walAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef::wal::WAL";
+
+// Object ID Walrus Pool untuk staking
+const walrusPoolObjectId = "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914";
+
+// Alamat RPC dan testnet SUI
+const rpcUrl = "https://testnet.suivision.xyz/";
+
+async function stakeWal() {
+  try {
+    // 1. Ambil public key dari private key (menggunakan lib crypto atau lib spesifik SUI jika ada)
+    const publicKey = getPublicKeyFromPrivateKey(privateKey);
+
+    // 2. Siapkan transaksi untuk staking
+    const transaction = {
+      sender: publicKey,
+      module: "wal",
+      function: "stake",
+      arguments: [
+        stakenodeOperator,
+        walAddress,
+        walrusPoolObjectId,
+      ],
+      gasBudget: 10000,  // Budget gas untuk transaksi
+    };
+
+    // 3. Tanda tangani transaksi (menggunakan private key)
+    const signedTransaction = signTransaction(transaction, privateKey);
+
+    // 4. Kirim transaksi ke RPC SUI untuk dieksekusi
+    const response = await axios.post(rpcUrl, {
+      jsonrpc: "2.0",
+      method: "sui_sendTransaction",
+      params: [signedTransaction],
+      id: 1,
+    });
+
+    // 5. Verifikasi status transaksi
+    if (response.data.result.status === "success") {
+      console.log("Transaksi staking berhasil!");
+    } else {
+      console.log(`Terjadi kesalahan: ${response.data.result.error}`);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+// Fungsi untuk mendapatkan public key dari private key
+function getPublicKeyFromPrivateKey(privateKey) {
+  // Untuk contoh ini, kita hanya menggunakan algoritma crypto standar untuk menghasilkan public key
+  // Anda perlu menggunakan pustaka yang sesuai dengan SUI untuk konversi private key -> public key
+  const publicKey = crypto.createECDH('secp256k1');
+  publicKey.setPrivateKey(Buffer.from(privateKey, 'hex'));
+  return publicKey.getPublicKey('hex');
+}
+
+// Fungsi untuk menandatangani transaksi
+function signTransaction(transaction, privateKey) {
+  // Pseudocode untuk menandatangani transaksi
+  // Anda perlu menggunakan pustaka SUI atau pustaka yang relevan untuk menandatangani transaksi
+  // Misalnya, menggunakan elliptic curve signing, atau menggunakan SDK SUI yang sesuai.
+  const sign = crypto.createSign('SHA256');
+  sign.update(JSON.stringify(transaction));
+  const signature = sign.sign(privateKey, 'hex');
+
+  return {
+    ...transaction,
+    signature,
   };
-
-  static STAKENODEOPERATOR =
-    "0x70bc82baec578437bf2f61ce024c2b6da46038ddbcb95dbfc72a2151103a8097"; // Node operator address
 }
 
-export default class Core {
-  constructor() {
-    this.loadPrivateKey();
-    console.log("Private key loaded:", this.acc);
-
-    this.txCount = 0;
-    this.client = new SuiClient({ url: getFullnodeUrl(COINENUM.RPC.NETWORK) });
-    this.walrusAddress = "0x9f992cc2430a1f442ca7a5ca7638169f5d5c00e0ebc3977a65e9ac6e497fe5ef";
-    this.walrusPoolObjectId =
-      "0x37c0e4d7b36a2f64d51bba262a1791f844cfd88f31379f1b7c04244061d43914"; // Pool object ID
-
-    this.stakeWalToOperator()
-      .then(() => {
-        console.log("Staking completed.");
-      })
-      .catch((err) => {
-        console.error("Staking failed:", err);
-      });
-  }
-
-  loadPrivateKey() {
-    try {
-      const data = fs.readFileSync("data.txt", "utf8");
-      this.acc = data.trim();
-      const decodedPrivateKey = decodeSuiPrivateKey(this.acc);
-      this.wallet = Ed25519Keypair.fromSecretKey(decodedPrivateKey.secretKey);
-      this.address = this.wallet.getPublicKey().toSuiAddress();
-    } catch (error) {
-      console.error("Failed to load private key: ", error);
-    }
-  }
-
-  async getBalance(showLogs = false) {
-    try {
-      const balance = await this.client.getAllBalances({
-        owner: this.address,
-      });
-      return balance.map((b) => {
-        b.totalBalance = parseFloat((Number(b.totalBalance) / Number(MIST_PER_SUI)).toFixed(2));
-        return b;
-      });
-    } catch (error) {
-      console.error("Error getting balance:", error);
-      throw error;
-    }
-  }
-
-  async stakeWalToOperator() {
-    console.log("Memulai staking...");
-    try {
-      // Step 1: Get coins of type WAL from the wallet
-      const coins = await this.client.getCoins({
-        owner: this.address,
-        coinType: COINENUM.WAL,
-      });
-      console.log("Coins found:", coins);
-
-      if (coins.data.length < 1) {
-        throw new Error("No WAL coins available to stake.");
-      }
-
-      // Step 2: Select the first WAL coin
-      const coin = coins.data[0];
-      const amountToStake = 1; // Amount to stake (1 WAL coin)
-
-      // Step 3: Create a transaction
-      const transaction = new Transaction();
-      
-      // Split the coin into stakeable amount (amount is in MIST, multiply by MIST_PER_SUI)
-      const coinToStake = await transaction.splitCoins(
-        transaction.object(coin.coinObjectId),
-        [BigInt(amountToStake) * BigInt(MIST_PER_SUI)]
-      );
-
-      // Step 4: Move call for staking the WAL coin to the node operator's pool
-      const stakedCoin = transaction.moveCall({
-        target: `${this.walrusAddress}::staking::stake_with_pool`,
-        arguments: [
-          transaction.object(this.walrusPoolObjectId), // Pool Object ID
-          transaction.object(coinToStake),             // Coin to stake
-          BigInt(amountToStake),                       // Amount of WAL coin to stake
-        ],
-      });
-
-      // Step 5: Transfer the staked coin back to the address (not necessary for staking directly, but keeps consistency)
-      await transaction.transferObjects([stakedCoin], this.address);
-
-      // Step 6: Execute the transaction on the blockchain
-      await this.executeTx(transaction);
-    } catch (error) {
-      console.error("Error staking WAL:", error);
-      throw error;
-    }
-  }
-
-  async executeTx(transaction) {
-    try {
-      const result = await this.client.signAndExecuteTransaction({
-        signer: this.wallet,
-        transaction: transaction,
-      });
-      console.log(`Tx Executed: ${result.digest}`);
-      await this.getBalance();
-    } catch (error) {
-      console.error("Error executing transaction:", error);
-      throw error;
-    }
-  }
-}
-
-const core = new Core();
+// Eksekusi staking
+stakeWal();
