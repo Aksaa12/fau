@@ -76,51 +76,42 @@ export default class Core {
   async stakeWalToOperator() {
     console.log("Memulai staking...");
     try {
-      const coins = await this.client.getCoins({
-        owner: this.address,
-        coinType: COINENUM.WAL,
-      });
-      console.log("Coins found:", coins);
-      if (coins.data.length < 1) {
-        throw new Error("No WAL coins available to stake.");
-      }
+        const coins = await this.client.getCoins({
+            owner: this.address,
+            coinType: COINENUM.WAL,
+        });
+        console.log("Coins found:", coins);
+        
+        if (coins.data.length < 1) {
+            throw new Error("No WAL coins available to stake.");
+        }
 
-      const coin = coins.data[0];
-      const amountToStake = BigInt(1);
+        const coin = coins.data[0];
+        const amountToStake = 1;
 
-      const poolObject = await this.client.getObject({
-        id: this.walrusPoolObjectId,
-        options: {
-          showBcs: true,
-          showContent: true,
-          showOwner: true,
-          showPreviousTransaction: true,
-          showStorageRebate: true,
-          showType: true,
-        },
-      });
+        // Check for correct arguments here
+        const transaction = new Transaction();
+        const coinToStake = await transaction.splitCoins(
+            transaction.object(coin.coinObjectId),
+            [BigInt(amountToStake) * BigInt(MIST_PER_SUI)] // Ensure this is converted to BigInt if required
+        );
 
-      const transaction = new Transaction();
-      const coinToStake = await transaction.splitCoins(
-        transaction.object(coin.coinObjectId),
-        [amountToStake * MIST_PER_SUI]
-      );
+        const stakedCoin = transaction.moveCall({
+            target: `${this.walrusAddress}::staking::stake_with_pool`,
+            arguments: [
+                transaction.pure(this.walrusPoolObjectId), // Use transaction.pure if passing a simple value like ID
+                transaction.object(coinToStake),
+            ],
+        });
 
-      const stakedCoin = transaction.moveCall({
-        target: `${this.walrusAddress}::staking::stake_with_pool`,
-        arguments: [
-          transaction.object(poolObject.data.objectId),
-          transaction.object(coinToStake),
-        ],
-      });
-
-      await transaction.transferObjects([stakedCoin], this.address);
-      await this.executeTx(transaction);
+        await transaction.transferObjects([stakedCoin], this.address);
+        await this.executeTx(transaction);
     } catch (error) {
-      console.error("Error staking WAL:", error);
-      throw error;
+        console.error("Error staking WAL:", error);
+        throw error;
     }
-  }
+}
+
 
   async executeTx(transaction) {
     try {
